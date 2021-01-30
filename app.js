@@ -1,10 +1,15 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const debug = require('debug')('app');
+const morgan = require('morgan');
+
 
 const app = express();
 
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
+
+app.use(morgan('tiny'));
 
 const port = 4000
 
@@ -24,25 +29,27 @@ app.get('/', (req, res) => {
     })
 })
 
+
 function isValidJSONString(str) {
     try {
-        JSON.parse(str);
+      JSON.parse(str);
     } catch (e) {
-        return false;
+      return false;
     }
     return true;
 }
 
 app.post('/validate-rule', (req, res) => {
-    // if (!isValidJSONString(req.body)) {
-    //     return res.status(400).json({
-    //         message: "Invalid JSON payload passed.",
-    //         status: "error",
-    //         data: null
-    //     })
-    // }
-    
+    if (!isValidJSONString(JSON.stringify(req.body))) {
+        return res.status(400).json({
+            message: "Invalid JSON payload passed.",
+            status: "error",
+            data: null
+        })
+    }
+
     const { rule, data } = req.body
+    console.log (rule, data)
     if (!rule) {
         return res.status(400).json({
             message: "rule is required.",
@@ -110,76 +117,19 @@ app.post('/validate-rule', (req, res) => {
         })
     }
 
-    if (condition === "eq") {
-        if (rule.field !== data[rule.field] || data[rule.field] !== rule.condition_value) {
-            return re.status(400).json({
-                message: `field ${rule.field} failed validation.`,
-                status: "error",
-                data: {
-                    validation: {
-                        error: true,
-                        field: rule.field,
-                        field_value: data[rule.field],
-                        condition,
-                        condition_value
-                    }
-                }
-            })
-        }
-    } else if (condition === "neq") {
-        if (rule.field !== data[rule.field] || data[rule.field] === rule.condition_value) {
-            return re.status(400).json({
-                message: `field ${rule.field} failed validation.`,
-                status: "error",
-                data: {
-                    validation: {
-                        error: true,
-                        field: rule.field,
-                        field_value: data[rule.field],
-                        condition,
-                        condition_value
-                    }
-                }
-            })
-        }
-    } else if (condition === "gt") {
-        if (rule.field !== data[rule.field] || data[rule.field] <= rule.condition_value) {
-            return re.status(400).json({
-                message: `field ${rule.field} failed validation.`,
-                status: "error",
-                data: {
-                    validation: {
-                        error: true,
-                        field: rule.field,
-                        field_value: data[rule.field],
-                        condition,
-                        condition_value
-                    }
-                }
-            })
-        }
-    } else if (condition === "gte") {
-        if (rule.field !== data[rule.field] || data[rule.field] < rule.condition_value) {
-            return re.status(400).json({
-                message: `field ${rule.field} failed validation.`,
-                status: "error",
-                data: {
-                    validation: {
-                        error: true,
-                        field: rule.field,
-                        field_value: data[rule.field],
-                        condition,
-                        condition_value
-                    }
-                }
-            })
-        }
-    } else if (condition === "contains") {
-        const fi = data[rule.field].toSting()
-        const con = rule.condition_value.toSting()
+    if(!Object.keys(data).includes(rule.field)){
+        return res.status(400).json({
+            message: `field ${rule.field} is missing from data.`,
+            status: "error",
+            data: null
+        })
+    }
 
-        if (rule.field !== data[rule.field] || !fi.includes(con)) {
-            return re.status(400).json({
+    const fi = data[rule.field].toString()
+    const con = rule.condition_value.toString()
+
+    if (condition === "eq" && data[rule.field] !== rule.condition_value) {
+            return res.status(400).json({
                 message: `field ${rule.field} failed validation.`,
                 status: "error",
                 data: {
@@ -192,8 +142,63 @@ app.post('/validate-rule', (req, res) => {
                     }
                 }
             })
-        }
-    } else {
+        } else if (condition === "neq" ** data[rule.field] === rule.condition_value) {
+            return res.status(400).json({
+                message: `field ${rule.field} failed validation.`,
+                status: "error",
+                data: {
+                    validation: {
+                        error: true,
+                        field: rule.field,
+                        field_value: data[rule.field],
+                        condition,
+                        condition_value
+                    }
+                }
+            })
+        } else if (condition === "gt" && data[rule.field] <= rule.condition_value) {
+            return res.status(400).json({
+                message: `field ${rule.field} failed validation.`,
+                status: "error",
+                data: {
+                    validation: {
+                        error: true,
+                        field: rule.field,
+                        field_value: data[rule.field],
+                        condition,
+                        condition_value
+                    }
+                }
+            })
+        } else if (condition === "gte" && data[rule.field] < rule.condition_value) {
+            return res.status(400).json({
+                message: `field ${rule.field} failed validation.`,
+                status: "error",
+                data: {
+                    validation: {
+                        error: true,
+                        field: rule.field,
+                        field_value: data[rule.field],
+                        condition,
+                        condition_value
+                    }
+                }
+            })
+        } else if (condition === "contains" && !fi.includes(con)) {
+            return res.status(400).json({
+                message: `field ${rule.field} failed validation.`,
+                status: "error",
+                data: {
+                    validation: {
+                        error: true,
+                        field: rule.field,
+                        field_value: data[rule.field],
+                        condition,
+                        condition_value
+                    }
+                }
+            })
+        } else {
         return res.status(200).json({
             message: "field missions successfully validated.",
             status: "success",
