@@ -1,6 +1,10 @@
-const mongoose = require("mongoose");
 const express = require('express');
+const bodyParser = require('body-parser');
+
 const app = express();
+
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: false }))
 
 const port = 4000
 
@@ -37,6 +41,7 @@ app.post('/validate-rule', (req, res) => {
     //         data: null
     //     })
     // }
+    
     const { rule, data } = req.body
     if (!rule) {
         return res.status(400).json({
