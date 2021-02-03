@@ -142,7 +142,7 @@ app.post('/validate-rule', (req, res) => {
                     }
                 }
             })
-        } else if (condition === "neq" ** data[rule.field] === rule.condition_value) {
+        } else if (condition === "neq" && data[rule.field] === rule.condition_value) {
             return res.status(400).json({
                 message: `field ${rule.field} failed validation.`,
                 status: "error",
